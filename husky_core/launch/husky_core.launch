@@ -1,0 +1,3 @@
+<launch>
+  <node name="husky_core" pkg="husky_core" type="husky_core_node" output="screen"/>
+</launch>

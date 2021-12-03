@@ -26,7 +26,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 <launch>
 
   <arg name="multimaster" default="false"/>
-
+  <arg name="enable_ekf" default="$(optenv ENABLE_EKF true)"/>
   <arg name="robot_namespace" default="/"/>
 
   <arg name="x" default="0.0"/>
@@ -35,7 +35,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <arg name="yaw" default="0.0"/>
 
   <!-- Optionally disable teleop control -->
-  <arg name="joystick" default="true" />
+  <arg name="joystick" default="false" />
 
   <group ns="$(arg robot_namespace)">
 
@@ -58,6 +58,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <group unless="$(arg multimaster)">
       <include file="$(find husky_control)/launch/control.launch">
         <arg name="multimaster" value="$(arg multimaster)"/>
+        <arg name="enable_ekf" value="$(arg enable_ekf)"/>
       </include>
       <include file="$(find husky_control)/launch/teleop.launch">
         <arg name="joystick" value="$(arg joystick)" />

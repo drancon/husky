@@ -29,21 +29,8 @@
 
   <!-- Start EKF for localization -->
   <group if="$(arg enable_ekf)" >
-    <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node">
-      <rosparam command="load" file="$(find husky_control)/config/navsat.yaml" />
-      <remap from="/imu/data" to="/imu/data"/>
-      <remap from="/gps/fix" to="/gps/fix"/>
-      <remap from="/odometry/filtered" to="/odometry/filtered/global"/>
-    </node>
-
-    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_local_node">
-      <rosparam command="load" file="$(find husky_control)/config/ekf_local.yaml" />
-      <remap from="/odometry/filtered" to="/odometry/filtered/local"/>
-    </node>
-
-    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_global_node">
-      <rosparam command="load" file="$(find husky_control)/config/ekf_global.yaml" />
-      <remap from="/odometry/filtered" to="/odometry/filtered/global"/>
+    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization">
+      <rosparam command="load" file="$(find husky_control)/config/localization.yaml" />
     </node>
   </group>
 
