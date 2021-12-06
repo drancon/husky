@@ -64,6 +64,7 @@ class HuskyCore {
   HuskyState state_;
   bool nav_success_;
   std::thread thread_task_;
+  std::string param_pose_topic_;
 };
 
 /******************************************************************************/
@@ -71,10 +72,11 @@ class HuskyCore {
 /******************************************************************************/
 HuskyCore::HuskyCore(const ros::NodeHandle& nh)
     : nh_(nh) {
-
+  /* ROS parameters */
+  nh_.getParam("pose_topic", param_pose_topic_);
   /* ROS Subscriber */
   sub_move_base_status_ = nh_.subscribe<actionlib_msgs::GoalStatusArray>("/move_base/status", 1, &HuskyCore::MoveBaseStatusCallback, this);
-  sub_odometry_global_ = nh_.subscribe<nav_msgs::Odometry>("/ground_truth_pose", 1, &HuskyCore::OdometryGlobalCallback, this);
+  sub_odometry_global_ = nh_.subscribe<nav_msgs::Odometry>(param_pose_topic_, 1, &HuskyCore::OdometryGlobalCallback, this);
   sub_controller_ready_ = nh_.subscribe<nav_msgs::Odometry>("/husky_velocity_controller/odom", 1, &HuskyCore::ControllerReadyCallback, this);
   /* ROS publisher */
   pub_goal_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);

@@ -1,3 +1,6 @@
 <launch>
-  <node name="husky_core" pkg="husky_core" type="husky_core_node" output="screen"/>
+  <arg name="pose_topic" default="/ground_truth_pose"/>
+  <node name="husky_core" pkg="husky_core" type="husky_core_node" output="screen">
+    <param name="pose_topic" value="$(arg pose_topic)"/>
+  </node>
 </launch>
