@@ -54,9 +54,6 @@ class HuskyCore {
   /* ROS Publisher */
   ros::Publisher pub_goal_pose_;
 
-  /* ROS published messages */
-  geometry_msgs::PoseStamped msg_goal_pose_;
-
   /* ROS Service Server */
   ros::ServiceServer srv_move_;
 
@@ -65,6 +62,8 @@ class HuskyCore {
   bool nav_success_;
   std::thread thread_task_;
   std::string param_pose_topic_;
+  bool param_comp_yaw_;
+  ros::Time last_stamp_;
 };
 
 /******************************************************************************/
@@ -74,6 +73,7 @@ HuskyCore::HuskyCore(const ros::NodeHandle& nh)
     : nh_(nh) {
   /* ROS parameters */
   nh_.getParam("pose_topic", param_pose_topic_);
+  nh_.getParam("compensate_yaw", param_comp_yaw_);
   /* ROS Subscriber */
   sub_move_base_status_ = nh_.subscribe<actionlib_msgs::GoalStatusArray>("/move_base/status", 1, &HuskyCore::MoveBaseStatusCallback, this);
   sub_odometry_global_ = nh_.subscribe<nav_msgs::Odometry>(param_pose_topic_, 1, &HuskyCore::OdometryGlobalCallback, this);
@@ -85,6 +85,8 @@ HuskyCore::HuskyCore(const ros::NodeHandle& nh)
   /* Main Thread */
   thread_task_ = std::thread(&HuskyCore::TaskThreadFunc, this);
   nav_success_ = false;
+  // initialize the time stamp of last goal
+  last_stamp_ = ros::Time::now();
 }
 
 /******************************************************************************/
@@ -129,12 +131,29 @@ bool HuskyCore::MoveServiceCallback(
       return false;
   }
 
-  ros::Rate rate(5.0);
+  ros::Rate rate(30.0);
 
-  // publish goal pose
+  /* ROS published messages */
+  geometry_msgs::PoseStamped msg_goal_pose_;
+  float yaw, dx, dy;
+
+  // get goal pose
   msg_goal_pose_ = req.goal;
+  // manipulate state value for smooth operation of mobile robot
   msg_goal_pose_.pose.position.z = 0.0;
+  if (param_comp_yaw_) {
+    // compute goal yaw
+    dx = msg_goal_pose_.pose.position.x - msg_sub_odometry_global_->pose.pose.position.x;
+    dy = msg_goal_pose_.pose.position.y - msg_sub_odometry_global_->pose.pose.position.y;
+    yaw = atan2(dy, dx);
+    // inpu goal yaw
+    msg_goal_pose_.pose.orientation.z = sin(0.5*yaw);
+    msg_goal_pose_.pose.orientation.w = cos(0.5*yaw);
+  }
+  
+  // publish goal pose
   pub_goal_pose_.publish(msg_goal_pose_);
+  // set the node's state as navigation mode
   state_ = HUSKY_NAVIGATION;
 
   while (state_ != HUSKY_READY) {
@@ -154,9 +173,17 @@ void HuskyCore::TaskNavigationFunc(void) {
       if (msg_sub_move_base_status_->status_list.size() > 0) {
         actionlib_msgs::GoalStatus current_status;
         current_status = msg_sub_move_base_status_->status_list.back();
+
+        // check if the node is referencing the outdated goal
+        if ( abs((current_status.goal_id.stamp - last_stamp_).toSec()) == 0.0 ) {
+          break;
+        }
+          
         if (current_status.status == 3) {
           state_ = HUSKY_READY;
           nav_success_ = true;
+          // store the time stamp of completed goal
+          last_stamp_ = current_status.goal_id.stamp;
         } else if (current_status.status == 4) {
           state_ = HUSKY_READY;
           nav_success_ = false;

@@ -1,6 +1,8 @@
 <launch>
   <arg name="pose_topic" default="/ground_truth_pose"/>
+  <arg name="compensate_yaw" default="true"/>
   <node name="husky_core" pkg="husky_core" type="husky_core_node" output="screen">
     <param name="pose_topic" value="$(arg pose_topic)"/>
+    <param name="compensate_yaw" value="$(arg compensate_yaw)"/>
   </node>
 </launch>
